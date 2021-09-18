@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialActions"]
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  password     String
+  firstName    String
+  lastName     String
+  email        String
+  role         Role          @default(Guest)
+  avatar       String
+  cinema       Cinema?       @relation(fields: [cinemaId], references: [id], onDelete: Cascade)
+  cinemaId     Int?
+  transactions Transaction[]
+}
+
+enum Role {
+  Admin
+  Guest
+}
+
+model Cinema {
+  id           Int           @id @default(autoincrement())
+  staff        User[]
+  location     String
+  capacity     Int           @default(60)
+  screening    Int           @default(5)
+  events       Event[]
+  transactions Transaction[]
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  guest     User     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  guestId   Int
+  orderTime DateTime @default(now())
+  agenda    Agenda   @relation(fields: [agendaId], references: [id])
+  quantity  Int
+  total     Float
+  agendaId  Int
+  cinema    Cinema   @relation(fields: [cinemaId], references: [id])
+  cinemaId  Int
+  policy    Policy   @relation(fields: [policyId], references: [id])
+  policyId  Int
+}
+
+model Event {
+  id       Int      @id @default(autoincrement())
+  date     DateTime @db.Date
+  agendas  Agenda[]
+  cinema   Cinema   @relation(fields: [cinemaId], references: [id])
+  cinemaId Int
+}
+
+model Movie {
+  id          Int      @id @default(autoincrement())
+  releaseDate String
+  genre       String
+  title       String
+  overview    String
+  poster      String
+  duration    String   @default("100 mins")
+  agendas     Agenda[]
+}
+
+model Agenda {
+  id           Int           @id @default(autoincrement())
+  movie        Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId      Int
+  screening    Int
+  showTime     DateTime      @db.Time
+  event        Event         @relation(fields: [eventId], references: [id])
+  eventId      Int
+  transactions Transaction[]
+  quantity     Int           @default(60)
+}
+
+model Policy {
+  id           Int           @id @default(autoincrement())
+  adultPrice   Float         @default(10.00)
+  childPrice   Float         @default(6.00)
+  discount     Int           @default(10)
+  condition    Int           @default(4)
+  transactions Transaction[]
+}
